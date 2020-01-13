@@ -267,7 +267,9 @@ namespace XanBotCore.DataPersistence {
 				XanBotLogger.WriteLine("§4A request to reload the config file was made, but there were unsaved manual changes in the config file made via code. The config file will not be reloaded, which may have adverse effects!", true);
 				return;
 			}
-			string[] lines = BaseHandler.GetLinesOfFile(ConfigFileName);
+
+			if (!BaseHandler.Exists(ConfigFileName)) BaseHandler.WriteAllText(ConfigFileName, "");
+			string[] lines = BaseHandler.ReadAllLines(ConfigFileName);
 			foreach (string line in lines) {
 				string[] values = line.Split(' ');
 				string index = values[0];

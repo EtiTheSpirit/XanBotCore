@@ -10,7 +10,7 @@ using XanBotCore.CommandSystem.Commands.ArchonCommands;
 namespace XanBotCore.Exceptions {
 
 	/// <summary>
-	/// Represents an error that occurs due to malformed command usage, like incorrect input or invalid arguments.
+	/// Represents an error that occurs due to improper command usage, like incorrect input or invalid arguments.
 	/// </summary>
 	public class CommandException : Exception {
 

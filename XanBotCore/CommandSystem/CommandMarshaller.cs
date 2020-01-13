@@ -247,6 +247,15 @@ namespace XanBotCore.CommandSystem {
 						execCommand = cmd;
 						XanBotLogger.WriteDebugLine($"Found command [{cmd.Name}] globally.");
 						break;
+					} else {
+						if (cmd.AlternateNames != null) {
+							foreach (string altName in cmd.AlternateNames) {
+								if (altName.ToLower() == cmdLower) {
+									execCommand = cmd;
+									break;
+								}
+							}
+						}
 					}
 				}
 			}

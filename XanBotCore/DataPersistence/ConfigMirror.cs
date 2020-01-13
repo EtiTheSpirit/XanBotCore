@@ -47,11 +47,11 @@ namespace XanBotCore.DataPersistence {
 				baseName = SourceConfig.Context.DataPersistenceName;
 			
 			string filePath = baseName + @"\" + SourceConfig.ConfigFileName;
-			string oldCfgText = SourceConfig.BaseHandler.ReadText(SourceConfig.ConfigFileName);
+			string oldCfgText = SourceConfig.BaseHandler.ReadAllText(SourceConfig.ConfigFileName);
 
 			//Console.WriteLine(ThisHandler.BasePath + filePath);
 			XFileHandler.CreateEntirePathIfDoesntExist(Path.Combine(ThisHandler.BasePath, filePath));
-			ThisHandler.WriteText(filePath, oldCfgText);
+			ThisHandler.WriteAllText(filePath, oldCfgText);
 		}
 	}
 }

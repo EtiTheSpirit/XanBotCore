@@ -13,9 +13,9 @@ namespace XanBotCore.DataPersistence {
 	/// </summary>
 	public class XFileHandler {
 		/// <summary>
-		/// The directory to the data persistence storage.
+		/// The directory to the data persistence storage. Its default value is %appdata%\XanBotCore
 		/// </summary>
-		public static readonly string BOT_FILE_DIR = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "XanBotCore");
+		public static string BotCoreDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "XanBotCore");
 
 		/// <summary>
 		/// The cache of existing <see cref="XFileHandler"/>s
@@ -25,7 +25,7 @@ namespace XanBotCore.DataPersistence {
 		/// <summary>
 		/// The global handler for when a bot context is null.
 		/// </summary>
-		public static readonly XFileHandler GLOBAL_HANDLER = new XFileHandler(BOT_FILE_DIR + "\\GlobalStorageContext\\");
+		public static readonly XFileHandler GLOBAL_HANDLER = new XFileHandler(BotCoreDirectory + "\\GlobalStorageContext\\");
 
 		/// <summary>
 		/// The underlying bot context for this <see cref="XFileHandler"/>
@@ -64,6 +64,7 @@ namespace XanBotCore.DataPersistence {
 		/// </summary>
 		/// <param name="path">The path of the file relative to <see cref="BasePath"/></param>
 		/// <returns></returns>
+		[Obsolete("Use ReadAllLines instead.")]
 		public string[] GetLinesOfFile(string path) {
 			if (!File.Exists(Path.Combine(BasePath, path))) {
 				File.CreateText(Path.Combine(BasePath, path)).Close();
@@ -95,7 +96,7 @@ namespace XanBotCore.DataPersistence {
 		/// </summary>
 		/// <param name="path">The path of the file relative to <see cref="BasePath"/>.</param>
 		/// <param name="contents">The contents of this file.</param>
-		public void WriteText(string path, string contents) {
+		public void WriteAllText(string path, string contents) {
 			File.WriteAllText(Path.Combine(BasePath, path), contents);
 		}
 
@@ -103,8 +104,17 @@ namespace XanBotCore.DataPersistence {
 		/// Reads all text from the specified file. The specified path should be relative to <see cref="BasePath"/>.
 		/// </summary>
 		/// <param name="path">The path of the file relative to <see cref="BasePath"/>.</param>
-		public string ReadText(string path) {
+		public string ReadAllText(string path) {
 			return File.ReadAllText(Path.Combine(BasePath, path));
+		}
+
+		/// <summary>
+		/// Returns all of the lines of a file. The specified path should be relative to <see cref="BasePath"/>.
+		/// </summary>
+		/// <param name="path">The path of the file relative to <see cref="BasePath"/></param>
+		/// <returns></returns>
+		public string[] ReadAllLines(string path) {
+			return File.ReadAllLines(Path.Combine(BasePath, path));
 		}
 
 		/// <summary>
@@ -152,19 +162,19 @@ namespace XanBotCore.DataPersistence {
 				StoredContextBindings[context] = new Dictionary<string, XFileHandler>();
 			}
 
-			XFileHandler handler = new XFileHandler(Path.Combine(BOT_FILE_DIR, context.DataPersistenceName, subDir), context);
+			XFileHandler handler = new XFileHandler(Path.Combine(BotCoreDirectory, context.DataPersistenceName, subDir), context);
 			StoredContextBindings[context][subDir] = handler;
 			return handler;
 		}
 
 		/// <summary>
-		/// Creates a new <see cref="XFileHandler"/> targetting a directory inside of <see cref="BOT_FILE_DIR"/>\customdata\<para/>
+		/// Creates a new <see cref="XFileHandler"/> targetting a directory inside of <see cref="BotCoreDirectory"/>\customdata\<para/>
 		/// This does not cache.
 		/// </summary>
 		/// <param name="name">The name of the directory to create.</param>
 		/// <returns></returns>
 		public static XFileHandler CreateNewHandlerInDataDirectory(string name) {
-			return new XFileHandler(Path.Combine(BOT_FILE_DIR, "customdata", name));
+			return new XFileHandler(Path.Combine(BotCoreDirectory, "customdata", name));
 		}
 
 		/// <summary>
