@@ -12,6 +12,9 @@ using XanBotCore.Utility;
 
 namespace XanBotCore.CommandSystem.Commands {
 	class CommandHelp : Command {
+
+		private const int SPACES_BETWEEN_NAME_AND_PERMS = 34;
+
 		public override string Name { get; } = "help";
 
 		public override string Description { get; } = "Lists every command or returns information on a command.\n\nSome commands may show something called \"Arguments\" as part of their documentation. This is the text like `<someArg>` or `[someArg]`.\n" +
@@ -26,36 +29,52 @@ namespace XanBotCore.CommandSystem.Commands {
 				string text = "Commands in yellow with a `+` before them are commands you can use. Commands in red with a `-` before them are commands you cannot use. ";
 				text += "\nSay **`{0}help command_name_here`** to get more documentation on a specific command. Say **`{0}help help`** to get information on how commands work.";
 				text += "```diff\n";
+
 				foreach (Command cmd in CommandMarshaller.Commands) {
-					int spaces = 34;
+					int spaces = SPACES_BETWEEN_NAME_AND_PERMS;
 					string usagePrefix = "+ ";
+					bool canUse = true;
 					if (executingMember != null) {
-						usagePrefix = cmd.CanUseCommand(executingMember).CanUse ? "+ " : "- ";
+						canUse = cmd.CanUseCommand(executingMember).CanUse;
+						usagePrefix = canUse ? "+ " : "- ";
 					}
-					text += usagePrefix + cmd.Name;
-					spaces -= (cmd.Name.Length + 2);
-					for (int i = 0; i < spaces; i++) {
-						text += " ";
+					string commandInfo = usagePrefix + cmd.Name;
+					text += commandInfo;
+
+					if (!canUse) {
+						spaces -= commandInfo.Length;
+						for (int i = 0; i < spaces; i++) {
+							text += " ";
+						}
+						text += $"Requires Permission Level {cmd.RequiredPermissionLevel} (or higher).";
 					}
-					text += $"Requires Permission Level {cmd.RequiredPermissionLevel} (or higher).";
 					text += "\n";
 				}
 
 				if (context != null && context.Commands.Length > 0) {
 					text += "\nCommands specific to this server:\n\n";
 					foreach (Command cmd in context.Commands) {
-						int spaces = 34;
-						string usagePrefix = "+";
-						if (executingMember != null) {
-							usagePrefix = cmd.CanUseCommand(executingMember).CanUse ? "+ " : "- ";
+						// Catch case: If this command overrides stock behavior, we don't need to show it because that'd show two commands in the list.
+						if (!IsCommandInArray(cmd, CommandMarshaller.Commands)) {
+							// In this case it's a unique command so we can write it.
+							int spaces = SPACES_BETWEEN_NAME_AND_PERMS;
+							string usagePrefix = "+";
+							bool canUse = true;
+							if (executingMember != null) {
+								canUse = cmd.CanUseCommand(executingMember).CanUse;
+								usagePrefix = canUse ? "+ " : "- ";
+							}
+							string commandInfo = usagePrefix + cmd.Name;
+							text += commandInfo;
+							if (!canUse) {
+								spaces -= commandInfo.Length;
+								for (int i = 0; i < spaces; i++) {
+									text += " ";
+								}
+								text += $"Requires Permission Level {cmd.RequiredPermissionLevel} (or higher).";
+							}
+							text += "\n";
 						}
-						text += usagePrefix + cmd.Name;
-						spaces -= (cmd.Name.Length + 2);
-						for (int i = 0; i < spaces; i++) {
-							text += " ";
-						}
-						text += $"Requires Permission Level {cmd.RequiredPermissionLevel} (or higher).";
-						text += "\n";
 					}
 				}
 
@@ -67,19 +86,6 @@ namespace XanBotCore.CommandSystem.Commands {
 			} else if (args.Length == 1) {
 				string command = args[0];
 				string cmdLower = command.ToLower();
-				foreach (Command cmd in CommandMarshaller.Commands) {
-					if (cmd.Name.ToLower() == cmdLower) {
-						await ResponseUtil.RespondToAsync(originalMessage, GetFormattedCommandHelpInfo(cmd, cmd.Name));
-						return;
-					} else if (cmd.AlternateNames != null) {
-						foreach (string alt in cmd.AlternateNames) {
-							if (alt.ToLower() == cmdLower) {
-								await ResponseUtil.RespondToAsync(originalMessage, GetFormattedCommandHelpInfo(cmd, alt));
-								return;
-							}
-						}
-					}
-				}
 				if (context.Commands.Length > 0) {
 					foreach (Command cmd in context.Commands) {
 						if (cmd.Name.ToLower() == cmdLower) {
@@ -91,6 +97,19 @@ namespace XanBotCore.CommandSystem.Commands {
 									await ResponseUtil.RespondToAsync(originalMessage, GetFormattedCommandHelpInfo(cmd, alt));
 									return;
 								}
+							}
+						}
+					}
+				}
+				foreach (Command cmd in CommandMarshaller.Commands) {
+					if (cmd.Name.ToLower() == cmdLower) {
+						await ResponseUtil.RespondToAsync(originalMessage, GetFormattedCommandHelpInfo(cmd, cmd.Name));
+						return;
+					} else if (cmd.AlternateNames != null) {
+						foreach (string alt in cmd.AlternateNames) {
+							if (alt.ToLower() == cmdLower) {
+								await ResponseUtil.RespondToAsync(originalMessage, GetFormattedCommandHelpInfo(cmd, alt));
+								return;
 							}
 						}
 					}
@@ -156,6 +175,15 @@ namespace XanBotCore.CommandSystem.Commands {
 				}
 			}
 			return o;
+		}
+
+		private static bool IsCommandInArray(Command cmd, Command[] arr) {
+			foreach (Command c in arr) {
+				if (c.Name.ToLower() == cmd.Name.ToLower()) {
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }
