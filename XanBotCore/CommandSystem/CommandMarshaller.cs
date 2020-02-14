@@ -264,7 +264,8 @@ namespace XanBotCore.CommandSystem {
 			if (execCommand != null) {
 				UsagePermissionPacket usagePerms = execCommand.CanUseCommand(member);
 				if (usagePerms.CanUse) {
-					if (execCommand.CanUseCommandInThisChannel(member, originalMessage.Channel, out DiscordChannel optimalTargetChannel)) {
+					bool canUseHere = execCommand.CanUseCommandInThisChannel(member, originalMessage.Channel, out DiscordChannel optimalTargetChannel);
+					if (canUseHere || originalMessage.Channel == optimalTargetChannel) {
 						try {
 							string allArgsText = "";
 							if (args.Length > 0) {
