@@ -43,6 +43,12 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\DSharpPlus\DSharpPlus.WebSocket.WebSocket4Net\bin\Debug\net45\DSharpPlus.WebSocket.WebSocket4Net.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Bcl.HashCode, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\..\OriDiscordBot2\packages\Microsoft.Bcl.HashCode.1.1.0\lib\net461\Microsoft.Bcl.HashCode.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Windows.Forms" />
@@ -72,6 +78,7 @@
     <Compile Include="Utility\DictionaryExtension.cs" />
     <Compile Include="Utility\DiscordObjects\ChannelConnectionEventContainer.cs" />
     <Compile Include="Utility\DiscordObjects\IEmbeddable.cs" />
+    <Compile Include="Utility\DiscordObjects\PseudoIntegratedRole.cs" />
     <Compile Include="Utility\DiscordObjects\RoleUtility.cs" />
     <Compile Include="Utility\ListExtensions.cs" />
     <Compile Include="XanBotCoreSystem.cs" />
@@ -104,6 +111,7 @@
     <Compile Include="Utility\WebUtil.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
