@@ -27,8 +27,7 @@ namespace EXAMPLE_BOT {
 			bool supportsVT = XanBotLogger.EnableVTSupport();
 			if (!supportsVT) {
 				XanBotLogger.ForegroundColor = ConsoleColor.Red;
-				XanBotLogger.WriteLine("ooOOoo! scHeT! this compootis does not support VT sequences!");
-				return;
+				XanBotLogger.WriteLine("ooOOoo! scHeT! this compootis does not support VT sequences! Colors will be rounded to the most similar ConsoleColor!");
 			}
 			XanBotLogger.ForegroundColor = MTN_DEW_YELLOW;
 			XanBotLogger.WriteLine("Dhue the dieu. This should be some weird yellow-green color.");
