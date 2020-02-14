@@ -15,7 +15,7 @@ namespace XanBotCore.ServerRepresentation {
 	/// If a server does not have a context designed specifically for it, a virtual context will be created.<para/>
 	/// See <see cref="BotContextRegistry"/> for how to get contexts for a server. User-defined contexts will automatically be registered.
 	/// </summary>
-	public abstract class BotContext : IConsolePrintable, IEmbeddable {
+	public abstract class BotContext : IConsolePrintable, IEmbeddable, IEquatable<BotContext> {
 
 		protected BotContext() {
 			if (!Virtual) BotContextRegistry.UserDefinedContextsInternal.Add(this);
@@ -214,6 +214,29 @@ namespace XanBotCore.ServerRepresentation {
 
 			return builder.Build();
 		}
+
+		public static bool operator ==(BotContext alpha, BotContext bravo) {
+			bool alphaValid = alpha is object;
+			bool bravoValid = bravo is object;
+			if (alphaValid == bravoValid) {
+				if (alphaValid == false) return true;
+				return alpha.Equals(bravo);
+			}
+			return false;
+		}
+
+		public static bool operator !=(BotContext alpha, BotContext bravo) => !(alpha == bravo);
+
+		public override bool Equals(object obj) => obj is BotContext context ? Equals(context) : false;
+
+		public override int GetHashCode() => HashCode.Combine(ServerId);
+
+		public bool Equals(BotContext other) {
+			if (ReferenceEquals(other, this)) return true;
+			return ServerId == other.ServerId;
+		}
+
+		
 	}
 
 	/// <summary>
