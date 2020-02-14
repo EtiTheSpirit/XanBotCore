@@ -22,13 +22,20 @@ namespace XanBotCore.CommandSystem.Commands {
 		public string ErrorMessage { get; }
 
 		/// <summary>
+		/// If set, this is the text that shows up when using >> help.
+		/// </summary>
+		public string CommandListMessage { get; }
+
+		/// <summary>
 		/// Create a new <see cref="UsagePermissionPacket"/> with the specified info.
 		/// </summary>
 		/// <param name="canUse">Whether or not the user can use this command.</param>
 		/// <param name="error">The error message to display if they cannot use this command.</param>
-		public UsagePermissionPacket(bool canUse, string error = default) {
+		/// <param name="commandListMessage">The message to display in the help command, or null if the default "Requires permission level X (or higher)" should show.</param>
+		public UsagePermissionPacket(bool canUse, string error = default, string commandListMessage = default) {
 			CanUse = canUse;
 			ErrorMessage = error;
+			CommandListMessage = commandListMessage;
 		}
 
 	}

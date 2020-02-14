@@ -34,19 +34,24 @@ namespace XanBotCore.CommandSystem.Commands {
 					int spaces = SPACES_BETWEEN_NAME_AND_PERMS;
 					string usagePrefix = "+ ";
 					bool canUse = true;
+					UsagePermissionPacket usagePacket = default;
 					if (executingMember != null) {
-						canUse = cmd.CanUseCommand(executingMember).CanUse;
+						usagePacket = cmd.CanUseCommand(executingMember);
+						canUse = usagePacket.CanUse;
 						usagePrefix = canUse ? "+ " : "- ";
 					}
 					string commandInfo = usagePrefix + cmd.Name;
 					text += commandInfo;
-
 					if (!canUse) {
 						spaces -= commandInfo.Length;
 						for (int i = 0; i < spaces; i++) {
 							text += " ";
 						}
-						text += $"Requires Permission Level {cmd.RequiredPermissionLevel} (or higher).";
+						if (usagePacket.CommandListMessage != null) {
+							text += usagePacket.CommandListMessage;
+						} else {
+							text += $"Requires Permission Level {cmd.RequiredPermissionLevel} (or higher).";
+						}
 					}
 					text += "\n";
 				}
@@ -60,8 +65,10 @@ namespace XanBotCore.CommandSystem.Commands {
 							int spaces = SPACES_BETWEEN_NAME_AND_PERMS;
 							string usagePrefix = "+";
 							bool canUse = true;
+							UsagePermissionPacket usagePacket = default;
 							if (executingMember != null) {
-								canUse = cmd.CanUseCommand(executingMember).CanUse;
+								usagePacket = cmd.CanUseCommand(executingMember);
+								canUse = usagePacket.CanUse;
 								usagePrefix = canUse ? "+ " : "- ";
 							}
 							string commandInfo = usagePrefix + cmd.Name;
@@ -71,7 +78,11 @@ namespace XanBotCore.CommandSystem.Commands {
 								for (int i = 0; i < spaces; i++) {
 									text += " ";
 								}
-								text += $"Requires Permission Level {cmd.RequiredPermissionLevel} (or higher).";
+								if (usagePacket.CommandListMessage != null) {
+									text += usagePacket.CommandListMessage;
+								} else {
+									text += $"Requires Permission Level {cmd.RequiredPermissionLevel} (or higher).";
+								}
 							}
 							text += "\n";
 						}
