@@ -24,8 +24,12 @@ namespace EXAMPLE_BOT {
 		/// The legacy systems using § will still work too.
 		/// </summary>
 		static void DoVTConsoleTest() {
-			// If the following block errors and/or you aren't running a version of Windows 10 after the october 2018 update, remove these following lines.
-			XanBotLogger.EnableVTSupport();
+			bool supportsVT = XanBotLogger.EnableVTSupport();
+			if (!supportsVT) {
+				XanBotLogger.ForegroundColor = ConsoleColor.Red;
+				XanBotLogger.WriteLine("ooOOoo! scHeT! this compootis does not support VT sequences!");
+				return;
+			}
 			XanBotLogger.ForegroundColor = MTN_DEW_YELLOW;
 			XanBotLogger.WriteLine("Dhue the dieu. This should be some weird yellow-green color.");
 			XanBotLogger.ForegroundColor = ConsoleColor.White;
