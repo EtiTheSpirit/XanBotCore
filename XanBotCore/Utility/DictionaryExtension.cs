@@ -62,7 +62,7 @@ namespace XanBotCore.Utility {
 		/// <param name="value">The value to find the key of.</param>
 		/// <exception cref="ValueNotFoundException"/>
 		/// <returns></returns>
-		public static TKey KeyOf<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TValue value) {
+		public static TKey KeyOf<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TValue value) {
 			if (!dictionary.Values.Contains(value)) throw new ValueNotFoundException("The specified value does not exist in this dictionary.");
 			foreach (TKey key in dictionary.Keys) {
 				TValue v = dictionary[key];

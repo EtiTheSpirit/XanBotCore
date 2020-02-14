@@ -12,41 +12,6 @@ namespace XanBotCore.Utility {
 	/// </summary>
 	public static class ListExtensions {
 		/// <summary>
-		/// A more robust version of <seealso cref="Enumerable.Skip{TSource}(IEnumerable{TSource}, int)"/> that is incredibly optimized for <seealso cref="List{T}"/> types (+500% enumeration speed)
-		/// </summary>
-		/// <typeparam name="T">The type stored in the IEnumerable</typeparam>
-		/// <param name="source">The source IEnumerable.</param>
-		/// <param name="count">The amount of objects to skip.</param>
-		/// <returns></returns>
-		public static IEnumerable<T> FastSkip<T>(this IEnumerable<T> source, int count) {
-			using (IEnumerator<T> e = source.GetEnumerator()) {
-				if (source is IList<T>) {
-					// List optimization: Typed list
-					IList<T> list = (IList<T>)source;
-					for (int i = count; i < list.Count; i++) {
-						e.MoveNext();
-						yield return list[i];
-					}
-				} else if (source is IList) {
-					// List optimization: Generic list
-					IList list = (IList)source;
-					for (int i = count; i < list.Count; i++) {
-						e.MoveNext();
-						yield return (T)list[i];
-					}
-				}
-
-				// .NET stock fallback code. Targets anything that isn't a list.
-				else {
-					while (count > 0 && e.MoveNext()) count--;
-					if (count <= 0) {
-						while (e.MoveNext()) yield return e.Current;
-					}
-				}
-			}
-		}
-
-		/// <summary>
 		/// Returns true if the contents of this <see cref="IEnumerable{T}"/> are identical to the contents of <paramref name="other"/> via using the Contains method. Consider using SequenceEquals instead if you do not need to test via Contains and can instead test via the objects' default equality methods.
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
@@ -54,6 +19,7 @@ namespace XanBotCore.Utility {
 		/// <param name="other"></param>
 		/// <returns></returns>
 		public static bool ContentEquals<T>(this IEnumerable<T> source, IEnumerable<T> other) {
+			if (other == null) throw new ArgumentNullException("other");
 			if (source.Count() != other.Count()) return false;
 
 			using (IEnumerator<T> srcEnumerator = source.GetEnumerator()) {
@@ -65,5 +31,40 @@ namespace XanBotCore.Utility {
 			
 			return true;
 		}
+
+		/// <summary>
+		/// Returns whether or not the two specified <see cref="IEnumerable{T}"/> instances have identical contents even if they are not necessarily the same reference.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="source"></param>
+		/// <param name="other"></param>
+		/// <returns></returns>
+		public static bool IsEqualTo<T>(this IEnumerable<T> source, IEnumerable<T> other) {
+			if (other == null) throw new ArgumentNullException("other");
+			if (ReferenceEquals(source, other)) return true;
+			if (source.Count() != other.Count()) return false;
+
+			T[] sourceArray = source.ToArray();
+			T[] otherArray = other.ToArray();
+
+			for (int idx = 0; idx < sourceArray.Length; idx++) {
+				if (!sourceArray[idx].Equals(otherArray[idx])) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		/// <summary>
+		/// Returns a random entry from the specified <see cref="IEnumerable{T}"/>
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="source"></param>
+		/// <returns></returns>
+		public static T RandomIn<T>(this IEnumerable<T> source) {
+			return source.ElementAt(RNG.Next(source.Count()));
+		}
+		private static readonly Random RNG = new Random();
 	}
 }
