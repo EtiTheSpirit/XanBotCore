@@ -492,7 +492,7 @@ namespace XanBotCore.Logging {
 			string timestamp = GetFormattedTimestamp();
 			LogMessage(message);
 			if (IsVTEnabled) {
-				WriteMessageFromColorsVT("^#008000;" + timestamp + DefaultColorInternal.ToString(IsVTEnabled) + message);
+				WriteMessageFromColorsVT("^#008000;" + timestamp + DefaultColorInternal.ToString() + message);
 			} else {
 				message = StripVTColorFormattingCode(message); // Get rid of any VT sequences.
 				WriteMessageFromColors(COLOR_CODE_SYM + "2" + timestamp + ForegroundColor.ToStringNonVT(true) + message);

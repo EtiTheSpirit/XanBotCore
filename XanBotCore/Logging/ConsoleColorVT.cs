@@ -145,30 +145,36 @@ namespace XanBotCore.Logging {
 		}
 
 		/// <summary>
-		/// Returns the formatted code so that it can be applied to the foreground by writing the result of this function to the console. Call <see cref="ToStringBG"/> to get the background format.
+		/// Returns the formatted code so that it can be applied to the foreground by writing the result of this function to the console.<para/>
+		/// This observes <see cref="XanBotLogger.IsVTEnabled"/> to determine whether to return this as a full RGB VT Sequence, or as the nearest <see cref="ConsoleColor"/> that is most similar to this <see cref="ConsoleColorVT"/>'s color.<para/>
+		/// Call <see cref="ToStringBG"/> to get the background format.
 		/// </summary>
 		/// <returns></returns>
 		public override string ToString() {
-			return string.Format("\u001b[38;2;{0};{1};{2}m", R, G, B);
+			return ToString(XanBotLogger.IsVTEnabled);
 		}
 
 
 		/// <summary>
-		/// Returns the formatted code so that it can be applied to the foreground.
-		/// </summary>
-		/// <param name="asVT">If false, this will return the result of <see cref="ToStringNonVT"/> with its requireExactConsoleColor parameter set to false. Otherwise, this will return the result of <see cref="ToString"/></param>
-		/// <exception cref="NotSupportedException"/>
-		public string ToString(bool asVT) {
-			return asVT ? ToString() : ToStringNonVT();
-		}
-
-		/// <summary>
-		/// Returns the formatted code so that it can be applied to the background by writing the result of this function to the console. Call <see cref="ToString"/> to get the foreground format.
+		/// Returns the formatted code so that it can be applied to the background by writing the result of this function to the console.<para/>
+		/// This observes <see cref="XanBotLogger.IsVTEnabled"/> to determine whether to return this as a full RGB VT Sequence, or as the nearest <see cref="ConsoleColor"/> that is most similar to this <see cref="ConsoleColorVT"/>'s color.<para/>
+		/// Call <see cref="ToString"/> to get the foreground format.
 		/// </summary>
 		/// <returns></returns>
 		public string ToStringBG() {
-			return string.Format("\u001b[48;2;{0};{1};{2}m", R, G, B);
+			return ToString(XanBotLogger.IsVTEnabled, true);
 		}
+
+
+		/// <summary>
+		/// Returns the formatted code so that it can be applied to the foreground or background. The format is determined by <paramref name="asVT"/>
+		/// </summary>
+		/// <param name="asVT">If false, this will return the result of <see cref="ToStringNonVT"/> with its requireExactConsoleColor parameter set to false. Otherwise, this will return the result of <see cref="ToString"/></param>
+		/// <exception cref="NotSupportedException"/>
+		public string ToString(bool asVT, bool background = false) {
+			return asVT ? ToStringVT(background) : ToStringNonVT();
+		}
+
 
 
 		/// <summary>
@@ -187,6 +193,17 @@ namespace XanBotCore.Logging {
 				return "§" + XanBotLogger.ConsoleColorMap.KeyOf(GetNearestConsoleColor()).ToString("X");
 			}
 			throw new NotSupportedException("This ConsoleColorVT does not have a color identical to a stock Windows console.");
+		}
+
+		/// <summary>
+		/// Converts this to a VT string.
+		/// </summary>
+		/// <returns></returns>
+		public string ToStringVT(bool background = false) {
+			if (background)
+				return string.Format("\u001b[48;2;{0};{1};{2}m", R, G, B);
+
+			return string.Format("\u001b[38;2;{0};{1};{2}m", R, G, B);
 		}
 
 		public static implicit operator ConsoleColorVT(ConsoleColor src) {
