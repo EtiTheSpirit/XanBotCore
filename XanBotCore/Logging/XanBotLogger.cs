@@ -26,7 +26,7 @@ namespace XanBotCore.Logging {
 		/// If true, the logger will print debug messages even if <see cref="XanBotCoreSystem.IsDebugMode"/> is false. If <see cref="XanBotCoreSystem.IsDebugMode"/> is true, this will do nothing.
 		/// </summary>
 		public static bool ShowDebugMessagesAnyway { get; set; } = false;
-		
+
 		/// <summary>
 		/// The time when this class is initialized into memory. Used for the log file name. This value does not change.
 		/// </summary>
@@ -123,17 +123,22 @@ namespace XanBotCore.Logging {
 		/// <summary>
 		/// The foreground color of this console.<para/>
 		/// Setting this to null if VT is enabled will default to white.<para/>
-		/// Attempting to set this value if <see cref="IsVTEnabled"/> is false will throw an <see cref="InvalidOperationException"/>
+		/// Attempting to set this value to a <see cref="ConsoleColorVT"/> if <see cref="IsVTEnabled"/> is false will round the color to the nearest <see cref="ConsoleColor"/>
 		/// </summary>
-		/// <exception cref="InvalidOperationException"/>
+		/// <exception cref="NotSupportedException"/>
 		public static ConsoleColorVT ForegroundColor {
-			get {
-				return FGColorInternal;
-			}
+			get => FGColorInternal;
 			set {
 				if (!IsVTEnabled) {
-					if (value == null) return; // This is safe if it's not enabled since this implies no changes.
-					throw new InvalidOperationException("Something attempted to set a custom foreground color, but VT Sequences have not been enabled. Did you remember to call EnableVTSupport()?");
+					ConsoleColor asStock;
+					if (value == null) {
+						asStock = ConsoleColor.Black;
+					} else {
+						asStock = value.GetNearestConsoleColor();
+					}
+
+					Console.ForegroundColor = asStock;
+					value = asStock;
 				}
 				if (value == null) value = ConsoleColor.White;
 				FGColorInternal = value;
@@ -144,17 +149,22 @@ namespace XanBotCore.Logging {
 		/// <summary>
 		/// The background color of this console.<para/>
 		/// Setting this to null if VT is enabled will default to black.<para/>
-		/// Attempting to set this value if <see cref="IsVTEnabled"/> is false will throw an <see cref="InvalidOperationException"/>
+		/// Attempting to set this value to a <see cref="ConsoleColorVT"/> if <see cref="IsVTEnabled"/> is false will round the color to the nearest <see cref="ConsoleColor"/>
 		/// </summary>
-		/// <exception cref="InvalidOperationException"/>
+		/// <exception cref="NotSupportedException"/>
 		public static ConsoleColorVT BackgroundColor {
-			get {
-				return BGColorInternal;
-			}
+			get => BGColorInternal;
 			set {
 				if (!IsVTEnabled) {
-					if (value == null) return; // This is safe if it's not enabled since this implies no changes.
-					throw new InvalidOperationException("Something attempted to set a custom background color, but VT Sequences have not been enabled. Did you remember to call EnableVTSupport()?");
+					ConsoleColor asStock;
+					if (value == null) {
+						asStock = ConsoleColor.White;
+					} else {
+						asStock = value.GetNearestConsoleColor();
+					}
+
+					Console.ForegroundColor = asStock;
+					value = asStock;
 				}
 				if (value == null) value = ConsoleColor.Black;
 				BGColorInternal = value;
@@ -182,28 +192,25 @@ namespace XanBotCore.Logging {
 
 		/// <summary>
 		/// When called, this enables VT Sequence support for the console. Whether or not this action will be successful depends on the platform this bot is running on.<para/>
+		/// This method will return <see cref="true"/> if VT sequences are supported and enabled, and <see cref="false"/> if they are not.<para/>
 		/// VT sequences allow low level control of the console's colors, including the allowance of full 16-million color RGB text and backgrounds.<para/>
 		/// See <a href="https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences">https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences</a> for more information.
 		/// </summary>
-		/// <exception cref="NotSupportedException"/>
-		/// <exception cref="NullReferenceException"/>
-		public static void EnableVTSupport() {
-			if (IsVTEnabled) return;
+		/// <returns>True if VT sequences are supported, false if they are not.</returns>
+		public static bool EnableVTSupport() {
+			if (IsVTEnabled) return true;
 
 			IntPtr hOut = GetStdHandle(-11);
 			if (hOut != INVALID_HANDLE_VALUE) {
 				if (GetConsoleMode(hOut, out uint mode)) {
 					mode |= 0x4;
-					SetConsoleMode(hOut, mode);
-					IsVTEnabled = true;
-					ForegroundColor.ApplyToForeground();
-					BackgroundColor.ApplyToBackground();
-				} else {
-					throw new NotSupportedException("This platform does not support the use of VT Sequences.");
+					if (SetConsoleMode(hOut, mode)) {
+						IsVTEnabled = true;
+						return true;
+					}
 				}
-			} else {
-				throw new NullReferenceException("Console handle is invalid.");
 			}
+			return false;
 		}
 
 		private static bool HasWarnedForLackOfVT = false;
@@ -213,12 +220,15 @@ namespace XanBotCore.Logging {
 		/// </summary>
 		private static void WriteProxy(string message) {
 			message = message.Replace('•', '■'); // Prevent abuse of beeping. If people run commands with bullets, the console will see it as 0x07 BEL and beep.
-			Console.Write(message);
-			if (Regex.IsMatch(message, @"(\x1b)(\[[^m]+)m") && !IsVTEnabled && !HasWarnedForLackOfVT) {
-				Console.Beep();
-				Console.WriteLine("\nWARNING: VT Sequence detected, but VT Sequences are not enabled! This warning will only show once.\n");
-				HasWarnedForLackOfVT = true;
+			if (Regex.IsMatch(message, @"(\x1b)(\[[^m]+)m") && !IsVTEnabled) {
+				if (!HasWarnedForLackOfVT) {
+					Console.Beep();
+					Console.WriteLine("\nWARNING: VT Sequence detected, but VT Sequences are not enabled! This warning will only show once. All VT sequences will be removed.\n");
+					HasWarnedForLackOfVT = true;
+				}
+				Regex.Replace(message, @"(\x1b)(\[[^m]+)m", "");
 			}
+			Console.Write(message);
 		}
 
 		/// <summary>
@@ -333,16 +343,13 @@ namespace XanBotCore.Logging {
 					if (coloredString == colorSegs.First()) {
 						if (message.Substring(0, 1) == COLOR_CODE_SYM.ToString()) {
 							res += coloredString.Substring(1);
-						}
-						else {
+						} else {
 							res += coloredString;
 						}
-					}
-					else {
+					} else {
 						res += coloredString.Substring(1);
 					}
-				}
-				else {
+				} else {
 					res += coloredString;
 				}
 			}
@@ -404,7 +411,7 @@ namespace XanBotCore.Logging {
 					}
 				}
 			}
-			
+
 			if (!skipConsoleStuff) {
 				Console.ForegroundColor = defColor;
 				XanBotConsoleCore.BumpIncomingLogTextPost();
@@ -419,7 +426,7 @@ namespace XanBotCore.Logging {
 			MatchCollection colorMatches = Regex.Matches(message, ConsoleColorVT.COLOR_CODE_REGEX);
 			message = Regex.Replace(message, ConsoleColorVT.COLOR_CODE_REGEX, SUPER_UNIQUE_SPLIT_THINGY[0]); // The behavior of Regex.split bricks everything so I have to use this disgusting hacky method.
 			string[] colorSegs = message.Split(SUPER_UNIQUE_SPLIT_THINGY, StringSplitOptions.None);
-			
+
 			// colorSegs[0] will be empty if we have a color code at the start.
 
 			ConsoleColorVT old = ForegroundColor;
@@ -460,13 +467,14 @@ namespace XanBotCore.Logging {
 			//string logMessage = message;
 			//if (MessageHasColors(logMessage)) logMessage = StripColorFormattingCode(logMessage);
 			//Log += timestamp + logMessage;
-			
+
 			if (IsVTEnabled) {
 				//WriteLineVT(timestamp, logMessage);
 				ConsoleColorVT old = ForegroundColor;
 				WriteMessageFromColorsVT("^#008000;" + timestamp + old + message);
 			} else {
-				WriteMessageFromColors(COLOR_CODE_SYM + "2" + timestamp + COLOR_CODE_SYM + "a" + message);
+				message = StripVTColorFormattingCode(message); // Get rid of any VT sequences.
+				WriteMessageFromColors(COLOR_CODE_SYM + "2" + timestamp + ForegroundColor.ToStringNonVT(true) + message);
 			}
 			WriteLogFile();
 		}
@@ -486,7 +494,8 @@ namespace XanBotCore.Logging {
 			if (IsVTEnabled) {
 				WriteMessageFromColorsVT("^#008000;" + timestamp + DefaultColorInternal.ToString(IsVTEnabled) + message);
 			} else {
-				WriteMessageFromColors(COLOR_CODE_SYM + "2" + timestamp + DefaultColorInternal.ToString(IsVTEnabled) + message);
+				message = StripVTColorFormattingCode(message); // Get rid of any VT sequences.
+				WriteMessageFromColors(COLOR_CODE_SYM + "2" + timestamp + ForegroundColor.ToStringNonVT(true) + message);
 			}
 			WriteLogFile();
 		}
@@ -502,6 +511,7 @@ namespace XanBotCore.Logging {
 				WriteDebugLineVT(message, alertSound);
 			} else {
 				message = "§7" + message;
+				message = StripVTColorFormattingCode(message);
 				WriteLine(message, alertSound, true);
 			}
 		}
@@ -530,7 +540,7 @@ namespace XanBotCore.Logging {
 		/// <summary>
 		/// In case the console runs out of buffer space, clear it out. This is where log files come in handy because the console has limited display.
 		/// </summary>
-		public static void ClearConsoleIfNecessary() { 
+		public static void ClearConsoleIfNecessary() {
 			if (Console.CursorTop >= Console.BufferHeight - 50) {
 				Console.Clear();
 				if (IsVTEnabled) {
@@ -544,8 +554,8 @@ namespace XanBotCore.Logging {
 					WriteConsoleClearedNotification();
 					Console.ForegroundColor = old;
 				}
-				
-				
+
+
 			}
 		}
 
