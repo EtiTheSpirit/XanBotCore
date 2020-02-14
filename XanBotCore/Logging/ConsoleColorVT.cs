@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -34,9 +35,25 @@ namespace XanBotCore.Logging {
 		};
 
 
+		/// <summary>
+		/// The R component of this console color.
+		/// </summary>
 		public byte R { get; } = 0;
+
+		/// <summary>
+		/// The G component of this console color.
+		/// </summary>
 		public byte G { get; } = 0;
+
+		/// <summary>
+		/// The B component of this console color.
+		/// </summary>
 		public byte B { get; } = 0;
+
+		/// <summary>
+		/// A cached value for the most similar <see cref="ConsoleColor"/> to this <see cref="ConsoleColorVT"/>.
+		/// </summary>
+		private ConsoleColor? NearestConsoleColorCache = null;
 
 		/// <summary>
 		/// Construct a new <see cref="ConsoleColorVT"/> from the specified color value.
@@ -95,12 +112,36 @@ namespace XanBotCore.Logging {
 		}
 
 		/// <summary>
-		/// Attempts to return this <see cref="ConsoleColorVT"/> as a <see cref="ConsoleColor"/> based on its color. If this <see cref="ConsoleColorVT"/> does not match up with a <see cref="ConsoleColor"/>, this will return null.
+		/// Attempts to return this <see cref="ConsoleColorVT"/> as a <see cref="ConsoleColor"/> based on its color.<para/>
+		/// If this <see cref="ConsoleColorVT"/> does not match up with a <see cref="ConsoleColor"/>, this will return null.<para/>
+		/// Consider using <see cref="GetNearestConsoleColor"/> if a non-null <see cref="ConsoleColor"/> is desired.
 		/// </summary>
 		/// <returns></returns>
 		public ConsoleColor? AsConsoleColor() {
-			if (Colors.Values.Contains(this)) return Colors.KeyOf(this);
+			if (ConsoleColorMap.Values.Contains(this)) return ConsoleColorMap.KeyOf(this);
 			return null;
+		}
+
+		/// <summary>
+		/// Returns the <see cref="ConsoleColor"/> whose color is most similar to this <see cref="ConsoleColorVT"/>. Similarity is tested via distance in 3D space, where RGB is mapped to XYZ.
+		/// </summary>
+		/// <returns></returns>
+		public ConsoleColor GetNearestConsoleColor() {
+			ConsoleColor? retn = AsConsoleColor();
+			if (retn != null) return retn.Value;
+			if (NearestConsoleColorCache != null) return NearestConsoleColorCache.Value;
+
+			ConsoleColor minObj = ConsoleColor.White;
+			double minDist = double.MaxValue;
+			foreach (ConsoleColorVT color in Colors.Values) {
+				double distance = GetColorDistance(this, color);
+				if (distance < minDist) {
+					minObj = Colors.KeyOf(color);
+					minDist = distance;
+				}
+			}
+			NearestConsoleColorCache = minObj;
+			return minObj;
 		}
 
 		/// <summary>
@@ -115,7 +156,7 @@ namespace XanBotCore.Logging {
 		/// <summary>
 		/// Returns the formatted code so that it can be applied to the foreground.
 		/// </summary>
-		/// <param name="asVT">If false, this will return the result of <see cref="ToStringNonVT"/>. Otherwise, this will return the result of <see cref="ToString"/></param>
+		/// <param name="asVT">If false, this will return the result of <see cref="ToStringNonVT"/> with its requireExactConsoleColor parameter set to false. Otherwise, this will return the result of <see cref="ToString"/></param>
 		/// <exception cref="NotSupportedException"/>
 		public string ToString(bool asVT) {
 			return asVT ? ToString() : ToStringNonVT();
@@ -131,19 +172,29 @@ namespace XanBotCore.Logging {
 
 
 		/// <summary>
-		/// A tostring method that uses legacy coloring when translating this ConsoleColorVT to a string. This will throw a <see cref="NotSupportedException"/> if this <see cref="ConsoleColorVT"/> is not using a color possible via stock console colors.
+		/// A tostring method that uses legacy coloring when translating this ConsoleColorVT to a string.<para/>
+		/// If <paramref name="requireExactConsoleColor"/> is <see cref="true"/>, this will throw a <see cref="NotSupportedException"/> if this <see cref="ConsoleColorVT"/> is not using a color equal to one of the default <see cref="ConsoleColor"/>s<para/>
+		/// If <paramref name="requireExactConsoleColor"/> is <see cref="false"/>, this will use <see cref="GetNearestConsoleColor"/> to apply.
 		/// </summary>
 		/// <returns></returns>
 		/// <exception cref="NotSupportedException"/>
-		public string ToStringNonVT() {
+		public string ToStringNonVT(bool requireExactConsoleColor = false) {
 			if (ConsoleColorMap.Values.Contains(this)) {
-				return "§" + ((Dictionary<byte, ConsoleColor>)XanBotLogger.ConsoleColorMap).KeyOf(AsConsoleColor().Value).ToString("X");
+				return "§" + XanBotLogger.ConsoleColorMap.KeyOf(AsConsoleColor().Value).ToString("X");
+			}
+			if (!requireExactConsoleColor) {
+				// We can try again.
+				return "§" + XanBotLogger.ConsoleColorMap.KeyOf(GetNearestConsoleColor()).ToString("X");
 			}
 			throw new NotSupportedException("This ConsoleColorVT does not have a color identical to a stock Windows console.");
 		}
 
 		public static implicit operator ConsoleColorVT(ConsoleColor src) {
 			return FromConsoleColor(src);
+		}
+
+		public static explicit operator ConsoleColor(ConsoleColorVT src) {
+			return src.GetNearestConsoleColor();
 		}
 
 		public static bool operator ==(ConsoleColorVT alpha, ConsoleColorVT bravo) {
@@ -167,11 +218,15 @@ namespace XanBotCore.Logging {
 		}
 
 		public override int GetHashCode() {
-			int hash = 13;
-			hash = (hash * 7) ^ R;
-			hash = (hash * 13) + G;
-			hash = (hash * 7) | B;
-			return hash;
+			return HashCode.Combine(R, G, B);
+		}
+
+		private static double GetColorDistance(ConsoleColorVT alpha, ConsoleColorVT bravo) {
+			double r = alpha.R - bravo.R;
+			double g = alpha.G - bravo.G;
+			double b = alpha.B - bravo.B;
+
+			return Math.Sqrt(Math.Pow(r, 2) + Math.Pow(g, 2) + Math.Pow(b, 2));
 		}
 	}
 }
