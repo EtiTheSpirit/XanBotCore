@@ -1,4 +1,5 @@
-﻿using DSharpPlus;
+﻿#pragma warning disable CS1998
+using DSharpPlus;
 using DSharpPlus.Entities;
 using System;
 using System.Collections.Generic;
